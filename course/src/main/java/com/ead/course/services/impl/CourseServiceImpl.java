@@ -1,14 +1,12 @@
 package com.ead.course.services.impl;
 
-import com.ead.course.clients.AuthUserClient;
 import com.ead.course.models.CourseModel;
-import com.ead.course.models.CourseUserModel;
 import com.ead.course.models.LessonModel;
 import com.ead.course.models.ModuleModel;
 import com.ead.course.repositories.CourseRepository;
-import com.ead.course.repositories.CourseUserRepository;
 import com.ead.course.repositories.LessonRepository;
 import com.ead.course.repositories.ModuleRepository;
+import com.ead.course.repositories.UserRepository;
 import com.ead.course.services.CourseService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,9 +23,6 @@ import java.util.UUID;
 public class CourseServiceImpl implements CourseService {
 
     @Autowired
-    private AuthUserClient authUserClient;
-
-    @Autowired
     private CourseRepository courseRepository;
 
     @Autowired
@@ -37,31 +32,22 @@ public class CourseServiceImpl implements CourseService {
     private LessonRepository lessonRepository;
 
     @Autowired
-    private CourseUserRepository courseUserRepository;
+    private UserRepository userRepository;
 
     @Transactional
     @Override
     public void delete(CourseModel courseModel) {
-        boolean deleteCourseUserInAuthUser = false;
         List<ModuleModel> moduleModelList = moduleRepository.findAllLModulesIntoCourse(courseModel.getCourseId());
-        if (!moduleModelList.isEmpty()){
-            for(ModuleModel module : moduleModelList){
+        if (!moduleModelList.isEmpty()) {
+            for (ModuleModel module : moduleModelList) {
                 List<LessonModel> lessonModelList = lessonRepository.findAllLessonsIntoModule(module.getModuleId());
-                if (!lessonModelList.isEmpty()){
+                if (!lessonModelList.isEmpty()) {
                     lessonRepository.deleteAll(lessonModelList);
                 }
             }
             moduleRepository.deleteAll(moduleModelList);
         }
-        List<CourseUserModel> courseUserModelList = courseUserRepository.findAllCourseUserIntoCourse(courseModel.getCourseId());
-        if(!courseUserModelList.isEmpty()){
-            deleteCourseUserInAuthUser = true;
-            courseUserRepository.deleteAll(courseUserModelList);
-        }
         courseRepository.delete(courseModel);
-        if (deleteCourseUserInAuthUser) {
-            authUserClient.deleteUserCourseByCourseId(courseModel.getCourseId());
-        }
     }
 
     @Override
